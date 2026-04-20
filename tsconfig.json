@@ -31,7 +31,6 @@
     ],
     "verbatimModuleSyntax": false
   },
-  "files": [],
   "include": [
     "src/**/*.ts",
     "src/**/*.tsx",
