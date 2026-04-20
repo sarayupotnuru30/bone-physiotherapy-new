@@ -1,9 +1,64 @@
-import { Outlet, createRootRoute, HeadContent, Scripts, Link } from "@tanstack/react-router";
+import { Outlet, createRootRoute, Link } from "@tanstack/react-router";
+import { useEffect } from "react";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { Toaster } from "@/components/ui/sonner";
 
-import appCss from "../styles.css?url";
+// CSR-friendly root route. We do not use TanStack Start's <HeadContent /> /
+// <Scripts /> shellComponent here because this app is a pure Vite SPA — the
+// HTML shell lives in /index.html. Per-route meta tags are still defined via
+// the route `head()` option for parity, but applied to document.head on the
+// client below.
+
+type MetaTag = {
+  title?: string;
+  name?: string;
+  property?: string;
+  content?: string;
+  charSet?: string;
+};
+
+const ROOT_META: MetaTag[] = [
+  { charSet: "utf-8" },
+  { name: "viewport", content: "width=device-width, initial-scale=1" },
+  { title: "Bone Physiotherapy — Expert Care for Movement & Recovery" },
+  {
+    name: "description",
+    content:
+      "Advanced physiotherapy and orthopaedic care. Expert treatment for orthopaedic, neurological, sports, and elderly wellness conditions.",
+  },
+  {
+    property: "og:title",
+    content: "Bone Physiotherapy — Expert Care for Movement & Recovery",
+  },
+  {
+    property: "og:description",
+    content: "Advanced physiotherapy and orthopaedic care for a pain-free, active life.",
+  },
+  { property: "og:type", content: "website" },
+  { name: "twitter:card", content: "summary" },
+];
+
+function applyMeta(meta: MetaTag[]) {
+  const titleTag = meta.find((m) => m.title);
+  if (titleTag?.title) document.title = titleTag.title;
+
+  for (const m of meta) {
+    if (m.title || m.charSet) continue;
+    const key = m.name ?? m.property;
+    if (!key || !m.content) continue;
+    const attr = m.name ? "name" : "property";
+    let el = document.head.querySelector<HTMLMetaElement>(
+      `meta[${attr}="${key}"]`,
+    );
+    if (!el) {
+      el = document.createElement("meta");
+      el.setAttribute(attr, key);
+      document.head.appendChild(el);
+    }
+    el.setAttribute("content", m.content);
+  }
+}
 
 function NotFoundComponent() {
   return (
@@ -28,47 +83,16 @@ function NotFoundComponent() {
 }
 
 export const Route = createRootRoute({
-  head: () => ({
-    meta: [
-      { charSet: "utf-8" },
-      { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Bone Physiotherapy — Expert Care for Movement & Recovery" },
-      {
-        name: "description",
-        content:
-          "Advanced physiotherapy and orthopaedic care. Expert treatment for orthopaedic, neurological, sports, and elderly wellness conditions.",
-      },
-      { property: "og:title", content: "Bone Physiotherapy — Expert Care for Movement & Recovery" },
-      {
-        property: "og:description",
-        content:
-          "Advanced physiotherapy and orthopaedic care for a pain-free, active life.",
-      },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary" },
-    ],
-    links: [{ rel: "stylesheet", href: appCss }],
-  }),
-  shellComponent: RootShell,
+  head: () => ({ meta: ROOT_META }),
   component: RootComponent,
   notFoundComponent: NotFoundComponent,
 });
 
-function RootShell({ children }: { children: React.ReactNode }) {
-  return (
-    <html lang="en">
-      <head>
-        <HeadContent />
-      </head>
-      <body>
-        {children}
-        <Scripts />
-      </body>
-    </html>
-  );
-}
-
 function RootComponent() {
+  useEffect(() => {
+    applyMeta(ROOT_META);
+  }, []);
+
   return (
     <div className="flex min-h-screen flex-col bg-background">
       <Navbar />
